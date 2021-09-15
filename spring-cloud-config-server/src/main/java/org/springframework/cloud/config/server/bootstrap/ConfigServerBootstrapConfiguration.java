@@ -44,29 +44,37 @@ import org.springframework.util.StringUtils;
 public class ConfigServerBootstrapConfiguration {
 
 	@EnableConfigurationProperties(ConfigServerProperties.class)
-	@Import({ EnvironmentRepositoryConfiguration.class })
+	@Import({EnvironmentRepositoryConfiguration.class})
 	protected static class LocalPropertySourceLocatorConfiguration {
-
+		/**
+		 * 环境操作库
+		 */
 		@Autowired
 		private EnvironmentRepository repository;
-
+		/**
+		 * 配置中心客户端配置
+		 */
 		@Autowired
 		private ConfigClientProperties client;
-
+		/**
+		 * 配置中心服务端配置
+		 */
 		@Autowired
 		private ConfigServerProperties server;
 
+		/**
+		 * 创建EnvironmentRepositoryPropertySourceLocator
+		 */
 		@Bean
 		public EnvironmentRepositoryPropertySourceLocator environmentRepositoryPropertySourceLocator() {
 			return new EnvironmentRepositoryPropertySourceLocator(this.repository, this.client.getName(),
-					this.client.getProfile(), getDefaultLabel());
+				this.client.getProfile(), getDefaultLabel());
 		}
 
 		private String getDefaultLabel() {
 			if (StringUtils.hasText(this.client.getLabel())) {
 				return this.client.getLabel();
-			}
-			else if (StringUtils.hasText(this.server.getDefaultLabel())) {
+			} else if (StringUtils.hasText(this.server.getDefaultLabel())) {
 				return this.server.getDefaultLabel();
 			}
 			return null;

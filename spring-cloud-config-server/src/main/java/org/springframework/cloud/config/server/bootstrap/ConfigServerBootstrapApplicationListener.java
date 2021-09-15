@@ -69,8 +69,11 @@ public class ConfigServerBootstrapApplicationListener
 
 	@Override
 	public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
+		// 获取环境对象
 		ConfigurableEnvironment environment = event.getEnvironment();
+		// 解析环境对象中spring.cloud.config.enabled的数据
 		if (!environment.resolvePlaceholders("${spring.cloud.config.enabled:false}").equalsIgnoreCase("true")) {
+			// 确认环境对象中是否存在configServerClient键，如果不存在则作处理
 			if (!environment.getPropertySources().contains(this.propertySource.getName())) {
 				environment.getPropertySources().addLast(this.propertySource);
 			}

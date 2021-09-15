@@ -25,12 +25,19 @@ import org.springframework.cloud.config.environment.Environment;
  * Interface for decrypting values in plain text files served through
  * {@link org.springframework.cloud.config.server.resource.ResourceController}.
  *
+ * 资源解密器
  * @author Sean Stiglitz
  */
 public interface ResourceEncryptor {
 
+	/**
+	 * 支持拓展名
+	 */
 	List<String> getSupportedExtensions();
 
+	/**
+	 * 解密
+	 */
 	String decrypt(String text, Environment environment) throws IOException;
 
 }

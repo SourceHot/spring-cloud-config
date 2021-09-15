@@ -19,6 +19,7 @@ package org.springframework.cloud.config.server.environment;
 import org.springframework.cloud.config.environment.Environment;
 
 /**
+ * 环境操作库
  * @author Dave Syer
  * @author Roy Clarkson
  */

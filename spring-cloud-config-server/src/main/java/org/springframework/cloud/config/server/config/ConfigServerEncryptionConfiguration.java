@@ -38,8 +38,11 @@ public class ConfigServerEncryptionConfiguration {
 
 	@Bean
 	public EncryptionController encryptionController() {
+		// 创建EncryptionController对象
 		EncryptionController controller = new EncryptionController(this.encryptor);
+		// 设置默认的应用名称
 		controller.setDefaultApplicationName(this.properties.getDefaultApplicationName());
+		// 设置默认profile
 		controller.setDefaultProfile(this.properties.getDefaultProfile());
 		return controller;
 	}

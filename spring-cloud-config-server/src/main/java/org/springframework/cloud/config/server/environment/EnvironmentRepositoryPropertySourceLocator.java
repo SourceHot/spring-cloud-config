@@ -30,13 +30,21 @@ import org.springframework.core.env.MapPropertySource;
  * @author Dave Syer
  */
 public class EnvironmentRepositoryPropertySourceLocator implements PropertySourceLocator {
-
+	/**
+	 * 环境操作库
+	 */
 	private EnvironmentRepository repository;
-
+	/**
+	 * 名称
+	 */
 	private String name;
-
+	/**
+	 * profile
+	 */
 	private String profiles;
-
+	/**
+	 * 标记
+	 */
 	private String label;
 
 	public EnvironmentRepositoryPropertySourceLocator(EnvironmentRepository repository, String name, String profiles,
@@ -49,13 +57,17 @@ public class EnvironmentRepositoryPropertySourceLocator implements PropertySourc
 
 	@Override
 	public org.springframework.core.env.PropertySource<?> locate(Environment environment) {
+		// 创建CompositePropertySource对象
 		CompositePropertySource composite = new CompositePropertySource("configService");
+		// 通过环境操作库配合名称、profiles和label搜索属性源
 		for (PropertySource source : this.repository.findOne(this.name, this.profiles, this.label, false)
-				.getPropertySources()) {
+			.getPropertySources()) {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> map = (Map<String, Object>) source.getSource();
+			// 加入到CompositePropertySource对象中
 			composite.addPropertySource(new MapPropertySource(source.getName(), map));
 		}
+		// 返回属性源
 		return composite;
 	}
 

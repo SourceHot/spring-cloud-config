@@ -59,26 +59,34 @@ public class ConfigServerMvcConfiguration implements WebMvcConfigurer {
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnMissingBean(org.springframework.cloud.context.scope.refresh.RefreshScope.class)
 	static class EnvironmentControllerConfiguration {
-
+		/**
+		 * 环境解密接口集合
+		 */
 		@Autowired(required = false)
 		private List<EnvironmentEncryptor> environmentEncryptors;
-
+		/**
+		 * 资源机密集合
+		 */
 		@Autowired(required = false)
 		private Map<String, ResourceEncryptor> resourceEncryptorMap = new HashMap<>();
-
+		/**
+		 * jackjson中序列化反序列化对象
+		 */
 		@Autowired(required = false)
 		private ObjectMapper objectMapper = new ObjectMapper();
 
 		@Bean
 		public EnvironmentController environmentController(EnvironmentRepository envRepository,
-				ConfigServerProperties server) {
+														   ConfigServerProperties server) {
 			return delegateController(envRepository, server);
 		}
 
 		protected EnvironmentController delegateController(EnvironmentRepository envRepository,
-				ConfigServerProperties server) {
+														   ConfigServerProperties server) {
+			// 创建EnvironmentController对象，参数是EnvironmentRepository接口实现类和objectMapper
 			EnvironmentController controller = new EnvironmentController(encrypted(envRepository, server),
-					this.objectMapper);
+				this.objectMapper);
+			// 设置stripDocument、acceptEmpty
 			controller.setStripDocumentFromYaml(server.isStripDocumentFromYaml());
 			controller.setAcceptEmpty(server.isAcceptEmpty());
 			return controller;
@@ -87,17 +95,21 @@ public class ConfigServerMvcConfiguration implements WebMvcConfigurer {
 		@Bean
 		@ConditionalOnBean(ResourceRepository.class)
 		public ResourceController resourceController(ResourceRepository repository, EnvironmentRepository envRepository,
-				ConfigServerProperties server) {
+													 ConfigServerProperties server) {
+			// 创建ResourceController对象
 			ResourceController controller = new ResourceController(repository, encrypted(envRepository, server),
-					this.resourceEncryptorMap);
+				this.resourceEncryptorMap);
+			// 设置encryptEnabled、plainTextEncryptEnabled
 			controller.setEncryptEnabled(server.getEncrypt().isEnabled());
 			controller.setPlainTextEncryptEnabled(server.getEncrypt().isPlainTextEncrypt());
 			return controller;
 		}
 
 		private EnvironmentRepository encrypted(EnvironmentRepository envRepository, ConfigServerProperties server) {
+			// 创建EnvironmentEncryptorEnvironmentRepository对象
 			EnvironmentEncryptorEnvironmentRepository encrypted = new EnvironmentEncryptorEnvironmentRepository(
-					envRepository, this.environmentEncryptors);
+				envRepository, this.environmentEncryptors);
+			// 设置成员变量overrides
 			encrypted.setOverrides(server.getOverrides());
 			return encrypted;
 		}
@@ -112,7 +124,7 @@ public class ConfigServerMvcConfiguration implements WebMvcConfigurer {
 		@Bean
 		@RefreshScope
 		public EnvironmentController environmentController(EnvironmentRepository envRepository,
-				ConfigServerProperties server) {
+														   ConfigServerProperties server) {
 			return super.delegateController(envRepository, server);
 		}
 
