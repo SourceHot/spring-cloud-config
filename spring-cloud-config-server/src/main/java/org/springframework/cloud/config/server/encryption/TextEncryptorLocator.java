@@ -21,6 +21,7 @@ import java.util.Map;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 
 /**
+ * 加密文本定位器
  * @author Dave Syer
  * @author Bartosz Wojtkiewicz
  *

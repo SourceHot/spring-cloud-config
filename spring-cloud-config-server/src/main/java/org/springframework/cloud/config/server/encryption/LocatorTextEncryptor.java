@@ -26,8 +26,14 @@ import org.springframework.security.crypto.encrypt.TextEncryptor;
  */
 public class LocatorTextEncryptor implements TextEncryptor {
 
+	/**
+	 * 前缀处理工具
+	 */
 	private EnvironmentPrefixHelper helper = new EnvironmentPrefixHelper();
 
+	/**
+	 * 获取TextEncryptor接口的工具
+	 */
 	private TextEncryptorLocator locator;
 
 	public LocatorTextEncryptor(TextEncryptorLocator locator) {
@@ -36,7 +42,9 @@ public class LocatorTextEncryptor implements TextEncryptor {
 
 	@Override
 	public String encrypt(String text) {
+		// 通过前缀处理器获取加密秘钥
 		Map<String, String> keys = this.helper.getEncryptorKeys("configserver", "default", text);
+		// 获取加密接口进行加密
 		return getLocator().locate(keys).encrypt(this.helper.stripPrefix(text));
 	}
 
@@ -46,7 +54,9 @@ public class LocatorTextEncryptor implements TextEncryptor {
 
 	@Override
 	public String decrypt(String encryptedText) {
+		// 通过前缀处理器获取加密秘钥
 		Map<String, String> keys = this.helper.getEncryptorKeys("configserver", "default", encryptedText);
+		// 获取加密接口进行解密
 		return getLocator().locate(keys).decrypt(this.helper.stripPrefix(encryptedText));
 	}
 

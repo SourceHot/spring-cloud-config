@@ -1,3 +1,6 @@
+encrypt:
+  key: abc23@!a
+
 info:
   component: Config Server
 spring:

@@ -50,11 +50,10 @@ import org.springframework.util.StringUtils;
  * @author Bartosz Wojtkiewicz
  * @author Rafal Zukowski
  * @author Dave Syer
- *
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties
-@Import({ SingleTextEncryptorConfiguration.class, DefaultTextEncryptorConfiguration.class })
+@Import({SingleTextEncryptorConfiguration.class, DefaultTextEncryptorConfiguration.class})
 public class EncryptionAutoConfiguration {
 
 	@Bean
@@ -101,9 +100,9 @@ public class EncryptionAutoConfiguration {
 		public TextEncryptorLocator textEncryptorLocator() {
 			KeyStore keyStore = this.key.getKeyStore();
 			KeyStoreTextEncryptorLocator locator = new KeyStoreTextEncryptorLocator(
-					new KeyStoreKeyFactory(keyStore.getLocation(), keyStore.getPassword().toCharArray(),
-							key.getKeyStore().getType()),
-					keyStore.getSecret(), keyStore.getAlias());
+				new KeyStoreKeyFactory(keyStore.getLocation(), keyStore.getPassword().toCharArray(),
+					key.getKeyStore().getType()),
+				keyStore.getSecret(), keyStore.getAlias());
 			RsaAlgorithm algorithm = this.rsaProperties.getAlgorithm();
 			locator.setRsaAlgorithm(algorithm);
 			locator.setSalt(this.rsaProperties.getSalt());
