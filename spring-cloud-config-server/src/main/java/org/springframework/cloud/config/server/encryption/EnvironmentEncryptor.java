@@ -21,6 +21,7 @@ import org.springframework.cloud.config.environment.Environment;
 /**
  * Service interface for decrypting properties in Environment object.
  *
+ * 解密环境对象中的加密信息
  * @author Bartosz Wojtkiewicz
  * @author Rafal Zukowski
  *

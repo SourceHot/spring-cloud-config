@@ -31,6 +31,8 @@ import org.springframework.util.StringUtils;
  * and profiles, if needed (this class does not have any crypto features, but it can be
  * used by components that do).
  *
+ *
+ * 前缀处理工具
  * @author Dave Syer
  *
  */

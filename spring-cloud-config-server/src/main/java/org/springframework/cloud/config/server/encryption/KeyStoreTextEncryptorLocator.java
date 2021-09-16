@@ -34,25 +34,45 @@ import org.springframework.security.rsa.crypto.RsaSecretEncryptor;
  *
  */
 public class KeyStoreTextEncryptorLocator implements TextEncryptorLocator {
-
+	/**
+	 * key键位
+	 */
 	private final static String KEY = "key";
-
+	/**
+	 * secret键位
+	 */
 	private final static String SECRET = "secret";
-
+	/**
+	 * 公钥私钥生成器
+	 */
 	private KeyStoreKeyFactory keys;
-
+	/**
+	 * 默认的secret
+	 */
 	private String defaultSecret;
-
+	/**
+	 * 默认的别名
+	 */
 	private String defaultAlias;
-
+	/**
+	 * rsa加密器
+	 */
 	private RsaSecretEncryptor defaultEncryptor;
-
+	/**
+	 * 秘钥定位器
+	 */
 	private SecretLocator secretLocator = new PassthruSecretLocator();
-
+	/**
+	 * RSA算法类
+	 */
 	private RsaAlgorithm rsaAlgorithm = RsaAlgorithm.DEFAULT;
-
+	/**
+	 *
+	 */
 	private boolean strong = false;
-
+	/**
+	 * 盐
+	 */
 	private String salt = "deadbeef";
 
 	public KeyStoreTextEncryptorLocator(KeyStoreKeyFactory keys, String defaultSecret, String defaultAlias) {
@@ -82,15 +102,20 @@ public class KeyStoreTextEncryptorLocator implements TextEncryptorLocator {
 
 	@Override
 	public TextEncryptor locate(Map<String, String> keys) {
+		// 确认别名
 		String alias = keys.containsKey(KEY) ? keys.get(KEY) : this.defaultAlias;
+		// 确认秘钥
 		String secret = keys.containsKey(SECRET) ? keys.get(SECRET) : this.defaultSecret;
+		// 确认别名是否和默认别名相同并且秘钥是否和默认秘钥相同
 		if (alias.equals(this.defaultAlias) && secret.equals(this.defaultSecret)) {
+			// 默认加密器(类型是rsa加密)为空的情况下设置rsa加密器
 			if (this.defaultEncryptor == null) {
 				this.defaultEncryptor = rsaSecretEncryptor(alias, secret);
 			}
+			// 返回对象
 			return this.defaultEncryptor;
-		}
-		else {
+		} else {
+			// 创建RsaSecretEncryptor对象返回
 			return rsaSecretEncryptor(alias, secret);
 		}
 	}

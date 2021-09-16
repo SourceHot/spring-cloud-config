@@ -35,10 +35,16 @@ import org.springframework.cloud.config.server.encryption.EnvironmentEncryptor;
  */
 public class EnvironmentEncryptorEnvironmentRepository implements EnvironmentRepository {
 
+	/**
+	 * 环境操作库
+	 */
 	private EnvironmentRepository delegate;
 
 	private final List<EnvironmentEncryptor> environmentEncryptors;
 
+	/**
+	 * 覆盖值
+	 */
 	private Map<String, String> overrides = new LinkedHashMap<>();
 
 	public EnvironmentEncryptorEnvironmentRepository(EnvironmentRepository delegate) {
@@ -58,15 +64,20 @@ public class EnvironmentEncryptorEnvironmentRepository implements EnvironmentRep
 
 	@Override
 	public Environment findOne(String name, String profiles, String label, boolean includeOrigin) {
+		// 通过环境操作库对象找到实际的环境对象
 		Environment environment = this.delegate.findOne(name, profiles, label, includeOrigin);
+		// 如果environmentEncryptors集合为空则循环解密
 		if (this.environmentEncryptors != null) {
 			for (EnvironmentEncryptor environmentEncryptor : environmentEncryptors) {
+				// 解密环境对象
 				environment = environmentEncryptor.decrypt(environment);
 			}
 		}
+		// 如果覆盖值不为空则进行覆盖值的写入
 		if (!this.overrides.isEmpty()) {
 			environment.addFirst(new PropertySource("overrides", getOverridesMap(includeOrigin)));
 		}
+		// 返回环境对象
 		return environment;
 	}
 

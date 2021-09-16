@@ -50,18 +50,29 @@ public class VaultEnvironmentEncryptor implements EnvironmentEncryptor {
 
 	@Override
 	public Environment decrypt(Environment environment) {
+		// 秘钥存储容器
 		Map<String, VaultResponse> loadedVaultKeys = new HashMap<>();
 
+		// 创建环境对象
 		Environment result = new Environment(environment);
+		// 从环境对象中获取属性源
 		for (PropertySource source : environment.getPropertySources()) {
+			// 获取源对象
 			Map<Object, Object> map = new LinkedHashMap<>(source.getSource());
+			// 循环处理源对象
 			for (Map.Entry<Object, Object> entry : new LinkedHashSet<>(map.entrySet())) {
+				// 获取源对象的key
 				Object key = entry.getKey();
+				// 获取key的值
 				String name = key.toString();
+				// 如果值存在并且十一{valut}开头
 				if (entry.getValue() != null && entry.getValue().toString().startsWith("{vault}")) {
+					// 提取值
 					String value = entry.getValue().toString();
+					// 移除当前处理数据
 					map.remove(key);
 					try {
+						// 切分字符串得到加密字符串
 						value = value.substring("{vault}".length());
 
 						if (!value.startsWith(":")) {
@@ -91,25 +102,24 @@ public class VaultEnvironmentEncryptor implements EnvironmentEncryptor {
 							loadedVaultKeys.put(vaultKey, keyValueTemplate.get(vaultKey));
 						}
 
+						// 获取VaultResponse对象
 						VaultResponse vaultResponse = loadedVaultKeys.get(vaultKey);
 
+						// 解密
 						if (vaultResponse == null || (vaultResponse.getData() == null
-								|| !vaultResponse.getData().containsKey(vaultParamName))) {
+							|| !vaultResponse.getData().containsKey(vaultParamName))) {
 							value = null;
-						}
-						else {
+						} else {
 							value = vaultResponse.getData().get(vaultParamName).toString();
 						}
-					}
-					catch (Exception e) {
+					} catch (Exception e) {
 						value = "<n/a>";
 						name = "invalid." + name;
 						String message = "Cannot resolve key: " + key + " (" + e.getClass() + ": " + e.getMessage()
-								+ ")";
+							+ ")";
 						if (logger.isDebugEnabled()) {
 							logger.debug(message, e);
-						}
-						else if (logger.isWarnEnabled()) {
+						} else if (logger.isWarnEnabled()) {
 							logger.warn(message);
 						}
 					}
