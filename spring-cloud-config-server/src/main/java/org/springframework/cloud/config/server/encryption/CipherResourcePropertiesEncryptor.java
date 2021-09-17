@@ -50,11 +50,15 @@ public class CipherResourcePropertiesEncryptor extends AbstractCipherResourceEnc
 
 	@Override
 	public String decrypt(String text, Environment environment) throws IOException {
+		// 待解密数据
 		Set<String> valsToDecrpyt = new HashSet<String>();
+		// 数据存储容器
 		Properties properties = new Properties();
 		StringBuffer sb = new StringBuffer();
+		// 将数据写入到数据存储容器
 		properties.load(new ByteArrayInputStream(text.getBytes()));
 
+		// 提取需要解密的数据
 		for (Object value : properties.values()) {
 			String valueStr = value.toString();
 			if (valueStr.startsWith(CIPHER_MARKER)) {
@@ -63,8 +67,10 @@ public class CipherResourcePropertiesEncryptor extends AbstractCipherResourceEnc
 		}
 
 		for (String value : valsToDecrpyt) {
+			// 解密
 			String decryptedValue = decryptValue(value.replace(CIPHER_MARKER, ""), environment.getName(),
-					environment.getProfiles());
+				environment.getProfiles());
+			// 替换实际数据
 			text = text.replace(value, decryptedValue);
 		}
 
