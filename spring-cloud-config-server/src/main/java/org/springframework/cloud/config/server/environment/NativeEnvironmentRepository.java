@@ -162,6 +162,7 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 			// 处理propertySourceToConfigData对象，将数据补充完整
 			ConfigDataEnvironmentPostProcessor.applyTo(environment, resourceLoader, null,
 					StringUtils.commaDelimitedListToSet(profile), new ConfigDataEnvironmentUpdateListener() {
+						// 添加属性源数据的时候做出处理
 						@Override
 						public void onPropertySourceAdded(org.springframework.core.env.PropertySource<?> propertySource,
 								ConfigDataLocation location, ConfigDataResource resource) {
@@ -187,24 +188,32 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 
 	@Override
 	public Locations getLocations(String application, String profile, String label) {
+		// 创建资源地址集合
 		String[] locations = this.searchLocations;
+		// 如果成员变量searchLocations为空将资源地址集合对象设置为默认资源地址集合
 		if (this.searchLocations == null || this.searchLocations.length == 0) {
 			locations = DEFAULT_LOCATIONS;
 		}
+		// 结果集合
 		Collection<String> output = new LinkedHashSet<String>();
 
+		// 标签为空的情况下将标签设置为默认标签啊
 		if (label == null) {
 			label = this.defaultLabel;
 		}
+		// 循环处理资源地址集合
 		for (String location : locations) {
-			String[] profiles = new String[] { profile };
+			// 创建profile集合
+			String[] profiles = new String[]{profile};
 			if (profile != null) {
 				profiles = StringUtils.commaDelimitedListToStringArray(profile);
 			}
-			String[] apps = new String[] { application };
+			// 创建应用名称集合
+			String[] apps = new String[]{application};
 			if (application != null) {
 				apps = StringUtils.commaDelimitedListToStringArray(application);
 			}
+			// 组装数据加入到结果集合中
 			for (String prof : profiles) {
 				for (String app : apps) {
 					String value = location;
@@ -226,7 +235,9 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 				}
 			}
 		}
+		// 如果需要为标签添加位置
 		if (this.addLabelLocations) {
+			// 循环资源地址集合
 			for (String location : locations) {
 				if (StringUtils.hasText(label)) {
 					String labelled = location + label.trim() + "/";
@@ -236,6 +247,7 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 				}
 			}
 		}
+		// 创建对象返回
 		return new Locations(application, profile, label, this.version, output.toArray(new String[0]));
 	}
 
@@ -262,15 +274,20 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 	}
 
 	protected Environment clean(Environment env,
-			Map<org.springframework.core.env.PropertySource<?>, PropertySourceConfigData> propertySourceToConfigData) {
+								Map<org.springframework.core.env.PropertySource<?>, PropertySourceConfigData> propertySourceToConfigData) {
+		// 创建换对象，结果对象
 		Environment result = new Environment(env.getName(), env.getProfiles(), env.getLabel(), this.version,
-				env.getState());
+			env.getState());
+		// 处理参数环境对象中的属性源
 		for (PropertySource source : env.getPropertySources()) {
+			// 获取属性源名称
 			String originalName = source.getName();
 			String name = originalName;
+			// 如果成员变量environment中包含当前的属性源名称则跳过处理
 			if (this.environment.getPropertySources().contains(name)) {
 				continue;
 			}
+			// 确认location数据
 			String location = null;
 
 			PropertySourceConfigData configData = propertySourceToConfigData.get(source.getOriginalPropertySource());
@@ -280,8 +297,7 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 				// use StandardConfigDataResource as that format is expected still
 				name = configDataResource.toString();
 				location = configData.location.toString();
-			}
-			else {
+			} else {
 				// if not, try and parse
 				Matcher matcher = RESOURCE_PATTERN.matcher(name);
 				if (matcher.find()) {
@@ -296,21 +312,25 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 				// only remove if there isn't a matching left bracket
 				name = name.replace("]", "");
 			}
+
+			// 搜索路径不为空进行搜索
 			if (this.searchLocations != null) {
+				// 是否匹配
 				boolean matches = false;
 				String normal = name;
 				if (normal.startsWith("file:")) {
 					normal = StringUtils.cleanPath(new File(normal.substring("file:".length())).getAbsolutePath());
 				}
 				String profile = result.getProfiles() == null ? null
-						: StringUtils.arrayToCommaDelimitedString(result.getProfiles());
+					: StringUtils.arrayToCommaDelimitedString(result.getProfiles());
+				// 处理搜索路径中的单个路径,通过路径和normal进行比较确认是否匹配
 				for (String pattern : getLocations(result.getName(), profile, result.getLabel()).getLocations()) {
 					if (!pattern.contains(":")) {
 						pattern = "file:" + pattern;
 					}
 					if (pattern.startsWith("file:")) {
 						pattern = StringUtils.cleanPath(new File(pattern.substring("file:".length())).getAbsolutePath())
-								+ "/";
+							+ "/";
 					}
 					if (logger.isTraceEnabled()) {
 						logger.trace("Testing pattern: " + pattern + " with property source: " + name);
@@ -321,14 +341,15 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 					}
 					if (location != null && location.startsWith("file:")) {
 						location = StringUtils
-								.cleanPath(new File(location.substring("file:".length())).getAbsolutePath()) + "/";
+							.cleanPath(new File(location.substring("file:".length())).getAbsolutePath()) + "/";
 					}
 					if (location != null && location.startsWith(pattern)
-							&& !location.substring(pattern.length()).contains("/")) {
+						&& !location.substring(pattern.length()).contains("/")) {
 						matches = true;
 						break;
 					}
 				}
+				// 如果不匹配则跳过
 				if (!matches) {
 					// Don't include this one: it wasn't matched by our search locations
 					if (logger.isDebugEnabled()) {
@@ -338,6 +359,7 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 				}
 			}
 			logger.info("Adding property source: " + originalName);
+			// 包含document #的加入
 			if (originalName.contains("document #")) {
 				// this is a multi-document file, use originalName for uniqueness.
 				result.add(new PropertySource(originalName, source.getSource()));

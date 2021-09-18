@@ -16,11 +16,12 @@
 
 package org.springframework.cloud.config.server.environment;
 
-import java.io.File;
-import java.net.URI;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNAuthenticationManager;
@@ -31,10 +32,8 @@ import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
 import org.tmatesoft.svn.core.wc2.SvnUpdate;
 
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
+import java.io.File;
+import java.net.URI;
 
 import static org.springframework.util.StringUtils.hasText;
 
@@ -45,12 +44,13 @@ import static org.springframework.util.StringUtils.hasText;
  * @author Roy Clarkson
  */
 public class SvnKitEnvironmentRepository extends AbstractScmEnvironmentRepository
-		implements EnvironmentRepository, InitializingBean {
+	implements EnvironmentRepository, InitializingBean {
 
-	private static Log logger = LogFactory.getLog(SvnKitEnvironmentRepository.class);
+	private static final Log logger = LogFactory.getLog(SvnKitEnvironmentRepository.class);
 
 	/**
 	 * The default label for environment properties requests.
+	 * 默认标签
 	 */
 	private String defaultLabel;
 
@@ -69,28 +69,31 @@ public class SvnKitEnvironmentRepository extends AbstractScmEnvironmentRepositor
 
 	@Override
 	public synchronized Locations getLocations(String application, String profile, String label) {
+		// 设置标签
 		if (label == null) {
 			label = this.defaultLabel;
 		}
+		// 创建SVN操作工厂
 		SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+		// 如果存在用户名为SVN操作工厂设置用户名
 		if (hasText(getUsername())) {
 			svnOperationFactory.setAuthenticationManager(
-					new DefaultSVNAuthenticationManager(null, false, getUsername(), getPassword()));
+				new DefaultSVNAuthenticationManager(null, false, getUsername(), getPassword()));
 		}
 		try {
+			// 确认SVN版本
 			String version;
 			if (new File(getWorkingDirectory(), ".svn").exists()) {
 				version = update(svnOperationFactory, label);
-			}
-			else {
+			} else {
 				version = checkout(svnOperationFactory);
 			}
+			// 创建Locations对象
 			return new Locations(application, profile, label, version, getPaths(application, profile, label));
-		}
-		catch (SVNException e) {
+		} catch (SVNException e) {
 			throw new IllegalStateException("Cannot checkout repository", e);
-		}
-		finally {
+		} finally {
+			// 摧毁工厂
 			svnOperationFactory.dispose();
 		}
 	}
@@ -139,27 +142,25 @@ public class SvnKitEnvironmentRepository extends AbstractScmEnvironmentRepositor
 				version.append(id);
 			}
 			return version.toString();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			String message = "Could not update remote for " + label + " (current local="
-					+ getWorkingDirectory().getPath() + "), remote: " + this.getUri() + ")";
+				+ getWorkingDirectory().getPath() + "), remote: " + this.getUri() + ")";
 			if (logger.isDebugEnabled()) {
 				logger.debug(message, e);
-			}
-			else if (logger.isWarnEnabled()) {
+			} else if (logger.isWarnEnabled()) {
 				logger.warn(message);
 			}
 		}
 
 		final SVNStatus status = SVNClientManager.newInstance().getStatusClient().doStatus(getWorkingDirectory(),
-				false);
+			false);
 		return status != null ? status.getRevision().toString() : null;
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		Assert.state(getUri() != null,
-				"You need to configure a uri for the subversion repository (e.g. 'https://example.com/svn/')");
+			"You need to configure a uri for the subversion repository (e.g. 'https://example.com/svn/')");
 		resolveRelativeFileUri();
 	}
 

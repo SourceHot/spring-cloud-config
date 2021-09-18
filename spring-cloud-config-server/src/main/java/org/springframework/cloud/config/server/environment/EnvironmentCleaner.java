@@ -29,8 +29,11 @@ import org.springframework.cloud.config.environment.PropertyValueDescriptor;
 public class EnvironmentCleaner {
 
 	public Environment clean(Environment value, String workingDir, String uri) {
+		// 创建环境对象
 		Environment result = new Environment(value);
+		// 处理环境对象中的属性源
 		for (PropertySource source : value.getPropertySources()) {
+			// 获取属性源的名称将其进行字符串修正
 			String name = source.getName().replace(workingDir, "");
 			name = name.replace("applicationConfig: [", "");
 			name = uri + "/" + name.replace("]", "");
@@ -40,12 +43,16 @@ public class EnvironmentCleaner {
 	}
 
 	protected Map<?, ?> clean(Map<?, ?> source, String uri) {
+		// 处理属性源数据
 		for (Map.Entry<?, ?> entry : source.entrySet()) {
+			// 如果属性值是PropertyValueDescriptor类型
 			if (entry.getValue() instanceof PropertyValueDescriptor) {
 				PropertyValueDescriptor descriptor = (PropertyValueDescriptor) entry.getValue();
+				// 补充最后"/"
 				if (!uri.endsWith("/")) {
 					uri = uri + "/";
 				}
+				// 修正描述对象中的origin数据
 				String updated = descriptor.getOrigin().replace("[", "[" + uri);
 				descriptor.setOrigin(updated);
 			}
