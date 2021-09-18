@@ -45,22 +45,34 @@ import static org.springframework.cloud.config.client.ConfigClientProperties.STA
 public abstract class AbstractVaultEnvironmentRepository implements EnvironmentRepository, Ordered {
 
 	// TODO: move to watchState:String on findOne?
+
+	/**
+	 * 提供请求的对象
+	 */
 	protected final ObjectProvider<HttpServletRequest> request;
 
+	/**
+	 * 环境观察接口
+	 */
 	protected final EnvironmentWatch watch;
 
 	/**
 	 * The key in vault shared by all applications. Defaults to application. Set to empty
 	 * to disable.
+	 * 默认秘钥
 	 */
 	protected String defaultKey;
 
 	/**
 	 * Vault profile separator. Defaults to comma.
+	 * Vault配置文件分隔符,默认逗号
 	 */
 	@NotEmpty
 	protected String profileSeparator;
 
+	/**
+	 * 序号
+	 */
 	protected int order;
 
 	public AbstractVaultEnvironmentRepository(ObjectProvider<HttpServletRequest> request, EnvironmentWatch watch,
@@ -74,22 +86,33 @@ public abstract class AbstractVaultEnvironmentRepository implements EnvironmentR
 
 	@Override
 	public Environment findOne(String application, String profile, String label) {
+		// 获取profile集合
 		String[] profiles = StringUtils.commaDelimitedListToStringArray(profile);
+		// 将profile集合中的default移除
 		List<String> scrubbedProfiles = scrubProfiles(profiles);
 
+
+		// 组合应用和profiles数据
 		List<String> keys = findKeys(application, scrubbedProfiles);
 
+		// 创建环境对象
 		Environment environment = new Environment(application, profiles, label, null, getWatchState());
 
+		// 循环应用和profiles组合数据
 		for (String key : keys) {
 			// read raw 'data' key from vault
+			// 读取数据
 			String data = read(key);
+			// 数据不为空的情况下
 			if (data != null) {
 				// data is in json format of which, yaml is a superset, so parse
+
+				// 通过yaml进行解析
 				final YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
 				yaml.setResources(new ByteArrayResource(data.getBytes()));
 				Properties properties = yaml.getObject();
 
+				// yaml解析结果不为空的情况下加入到环境对象中
 				if (!properties.isEmpty()) {
 					environment.add(new PropertySource("vault:" + key, properties));
 				}
@@ -113,15 +136,21 @@ public abstract class AbstractVaultEnvironmentRepository implements EnvironmentR
 	private List<String> findKeys(String application, List<String> profiles) {
 		List<String> keys = new ArrayList<>();
 
+		// 是否存在成员变量defaultKey并且成员变量defaultKey和application不相同,向结果加入defaultKey数据
 		if (StringUtils.hasText(this.defaultKey) && !this.defaultKey.equals(application)) {
 			keys.add(this.defaultKey);
+			// 向结果集加入profiles相关内容
 			addProfiles(keys, this.defaultKey, profiles);
 		}
 
 		// application may have comma-separated list of names
+		// 切分application参数
 		String[] applications = StringUtils.commaDelimitedListToStringArray(application);
+		// 循环处理单个application数据
 		for (String app : applications) {
+			// 加入结果集
 			keys.add(app);
+			// 向结果集加入profiles相关内容
 			addProfiles(keys, app, profiles);
 		}
 

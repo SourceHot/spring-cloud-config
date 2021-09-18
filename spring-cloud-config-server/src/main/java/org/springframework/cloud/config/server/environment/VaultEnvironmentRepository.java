@@ -101,12 +101,15 @@ public class VaultEnvironmentRepository extends AbstractVaultEnvironmentReposito
 
 	@Override
 	protected String read(String key) {
+		// 创建http请求头
 		HttpHeaders headers = new HttpHeaders();
+		// 加入X-Vault-Token数据
 		headers.add(VAULT_TOKEN, getToken());
+		// 如果存在命名空间向请求头加入X-Vault-Namespace数据
 		if (StringUtils.hasText(this.namespace)) {
 			headers.add(VAULT_NAMESPACE, this.namespace);
 		}
-
+		// 读取数据
 		return this.accessStrategy.getData(headers, this.backend, key);
 	}
 

@@ -19,6 +19,7 @@ package org.springframework.cloud.config.server.environment;
 import org.springframework.cloud.config.server.support.EnvironmentRepositoryProperties;
 
 /**
+ * 环境操作库生成工厂
  * @param <T> {@link EnvironmentRepository} type
  * @param <P> {@link EnvironmentRepositoryProperties} type
  * @author Dylan Roberts

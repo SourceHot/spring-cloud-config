@@ -17,6 +17,7 @@
 package org.springframework.cloud.config.server.support;
 
 /**
+ * 环境操作库属性
  * @author Dylan Roberts
  */
 public interface EnvironmentRepositoryProperties {

@@ -56,38 +56,58 @@ import org.springframework.util.StringUtils;
  */
 public class NativeEnvironmentRepository implements EnvironmentRepository, SearchPathLocator, Ordered {
 
+	/**
+	 * 默认资源存储地址
+	 */
 	private static final String[] DEFAULT_LOCATIONS = new String[] { "optional:classpath:/",
 			"optional:classpath:/config/", "optional:file:./", "optional:file:./config/" };
 
+	/**
+	 * 资源正则
+	 */
 	static final Pattern RESOURCE_PATTERN = Pattern.compile("Config resource '(.*?)' via location '(.*)'");
 
 	private static Log logger = LogFactory.getLog(NativeEnvironmentRepository.class);
 
+	/**
+	 * 默认标记
+	 */
 	private String defaultLabel;
 
 	/**
 	 * Locations to search for configuration files. Defaults to the same as a Spring Boot
 	 * app so [classpath:/,classpath:/config/,file:./,file:./config/].
+	 *
+	 * 搜索路径集合
 	 */
 	private String[] searchLocations;
 
 	/**
 	 * Flag to determine how to handle exceptions during decryption (default false).
+	 * 解密过程中如果出现异常是否直接抛出
 	 */
 	private boolean failOnError;
 
 	/**
 	 * Flag to determine whether label locations should be added.
+	 * 用于确定是否应添加标签位置的标志
 	 */
 	private boolean addLabelLocations;
 
 	/**
 	 * Version string to be reported for native repository.
+	 * 版本
 	 */
 	private String version;
 
+	/**
+	 * 环境对象
+	 */
 	private ConfigurableEnvironment environment;
 
+	/**
+	 * 序号
+	 */
 	private int order;
 
 	public NativeEnvironmentRepository(ConfigurableEnvironment environment, NativeEnvironmentProperties properties) {
@@ -133,9 +153,13 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 	public Environment findOne(String config, String profile, String label, boolean includeOrigin) {
 
 		try {
+			// 获取环境对象
 			ConfigurableEnvironment environment = getEnvironment(config, profile, label);
+			// 创建默认资源加载器
 			DefaultResourceLoader resourceLoader = new DefaultResourceLoader();
+			// 创建属性源和属性源配置对象的映射关系
 			Map<org.springframework.core.env.PropertySource<?>, PropertySourceConfigData> propertySourceToConfigData = new HashMap<>();
+			// 处理propertySourceToConfigData对象，将数据补充完整
 			ConfigDataEnvironmentPostProcessor.applyTo(environment, resourceLoader, null,
 					StringUtils.commaDelimitedListToSet(profile), new ConfigDataEnvironmentUpdateListener() {
 						@Override
@@ -146,7 +170,9 @@ public class NativeEnvironmentRepository implements EnvironmentRepository, Searc
 						}
 					});
 
+			// 移除config-data-setup名字的属性源
 			environment.getPropertySources().remove("config-data-setup");
+			// 清理后返回环境对象
 			return clean(new PassthruEnvironmentRepository(environment).findOne(config, profile, label, includeOrigin),
 					propertySourceToConfigData);
 		}

@@ -25,6 +25,9 @@ import org.springframework.cloud.config.environment.Environment;
  */
 public interface EnvironmentRepository {
 
+	/**
+	 * 寻找一个环境对象
+	 */
 	Environment findOne(String application, String profile, String label);
 
 	default Environment findOne(String application, String profile, String label, boolean includeOrigin) {

@@ -47,9 +47,12 @@ public class SpringVaultEnvironmentRepository extends AbstractVaultEnvironmentRe
 	}
 
 	protected String read(String key) {
+		// 通过keyValueTemplate获取数据
 		VaultResponse response = this.keyValueTemplate.get(key);
+		// 如果数据不为空
 		if (response != null) {
 			try {
+				// 通过 objectMapper得到最终的数据
 				return objectMapper.writeValueAsString(response.getData());
 			}
 			catch (JsonProcessingException e) {

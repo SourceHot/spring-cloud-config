@@ -31,9 +31,13 @@ import org.springframework.util.StringUtils;
  * @author Piotr Mińkowski
  */
 public class RedisEnvironmentRepository implements EnvironmentRepository {
-
+	/**
+	 * redis操作对象
+	 */
 	private final StringRedisTemplate redis;
-
+	/**
+	 * redis环境配置
+	 */
 	private final RedisEnvironmentProperties properties;
 
 	public RedisEnvironmentRepository(StringRedisTemplate redis, RedisEnvironmentProperties properties) {
@@ -43,23 +47,34 @@ public class RedisEnvironmentRepository implements EnvironmentRepository {
 
 	@Override
 	public Environment findOne(String application, String profile, String label) {
+		// 切分profile
 		String[] profiles = StringUtils.commaDelimitedListToStringArray(profile);
+		// 创建环境对象
 		Environment environment = new Environment(application, profiles, label, null, null);
+		// 处理application和profile之间的关系
 		final List<String> keys = addKeys(application, Arrays.asList(profiles));
+		// 循环处理keys
 		keys.forEach(it -> {
+			// 通过redis读取数据并将其加入到环境对象中
 			Map<?, ?> m = redis.opsForHash().entries(it);
 			environment.add(new PropertySource("redis:" + it, m));
 		});
+		// 返回环境对象
 		return environment;
 	}
 
 	private List<String> addKeys(String application, List<String> profiles) {
+		// 创建结果集
 		List<String> keys = new ArrayList<>();
+		// 加入application参数
 		keys.add(application);
+		// 循环profiles将application+"-"+profile组合后加入到结果集
 		for (String profile : profiles) {
 			keys.add(application + "-" + profile);
 		}
+		// 翻转
 		Collections.reverse(keys);
+		// 返回
 		return keys;
 	}
 

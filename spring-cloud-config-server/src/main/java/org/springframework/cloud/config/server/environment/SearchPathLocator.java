@@ -33,15 +33,25 @@ public interface SearchPathLocator {
 	 * Locations POJO.
 	 */
 	class Locations {
-
+		/**
+		 * 应用名称
+		 */
 		private final String application;
-
+		/**
+		 * profile
+		 */
 		private final String profile;
-
+		/**
+		 * 标签
+		 */
 		private final String label;
-
+		/**
+		 * 地址
+		 */
 		private final String[] locations;
-
+		/**
+		 * 版本
+		 */
 		private final String version;
 
 		public Locations(String application, String profile, String label, String version, String[] locations) {

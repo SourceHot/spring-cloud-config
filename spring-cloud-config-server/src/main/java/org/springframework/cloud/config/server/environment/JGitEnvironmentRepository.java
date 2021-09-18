@@ -264,8 +264,11 @@ public class JGitEnvironmentRepository extends AbstractScmEnvironmentRepository
 	public String refresh(String label) {
 		Git git = null;
 		try {
+			// 创建git客户端
 			git = createGitClient();
+			// 确认是否需要拉取数据
 			if (shouldPull(git)) {
+				// 拉取数据
 				FetchResult fetchStatus = fetch(git, label);
 				if (this.deleteUntrackedBranches && fetchStatus != null) {
 					deleteUntrackedLocalBranches(fetchStatus.getTrackingRefUpdates(), git);
@@ -275,7 +278,9 @@ public class JGitEnvironmentRepository extends AbstractScmEnvironmentRepository
 			// checkout after fetch so we can get any new branches, tags, ect.
 			// if nothing to update so just checkout and merge.
 			// Merge because remote branch could have been updated before
+			// 切换分支
 			checkout(git, label);
+			// 合并分支
 			tryMerge(git, label);
 
 			// always return what is currently HEAD as the version

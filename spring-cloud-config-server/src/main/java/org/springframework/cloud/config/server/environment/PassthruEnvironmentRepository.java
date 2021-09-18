@@ -43,8 +43,14 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  */
 public class PassthruEnvironmentRepository implements EnvironmentRepository {
 
+	/**
+	 * 默认标记
+	 */
 	private static final String DEFAULT_LABEL = "master";
 
+	/**
+	 * 标准配置来源
+	 */
 	private Set<String> standardSources = new HashSet<String>(
 			Arrays.asList("vcap", StandardEnvironment.SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME,
 					StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
@@ -52,6 +58,9 @@ public class PassthruEnvironmentRepository implements EnvironmentRepository {
 					StandardServletEnvironment.SERVLET_CONFIG_PROPERTY_SOURCE_NAME,
 					StandardServletEnvironment.SERVLET_CONTEXT_PROPERTY_SOURCE_NAME));
 
+	/**
+	 * 环境配置
+	 */
 	private ConfigurableEnvironment environment;
 
 	public PassthruEnvironmentRepository(ConfigurableEnvironment environment) {
@@ -69,11 +78,17 @@ public class PassthruEnvironmentRepository implements EnvironmentRepository {
 
 	@Override
 	public Environment findOne(String application, String profile, String label, boolean includeOrigin) {
+		// 创建环境对象
 		Environment result = new Environment(application, StringUtils.commaDelimitedListToStringArray(profile), label,
-				null, null);
+			null, null);
+
+		// 提取环境对象中的属性源
 		for (org.springframework.core.env.PropertySource<?> source : this.environment.getPropertySources()) {
+			// 获取属性源名称
 			String name = source.getName();
+			// 不在默认数据源中，数据源类型是否是MapPropertySource
 			if (!this.standardSources.contains(name) && source instanceof MapPropertySource) {
+				// 向结果集合加入数据
 				result.add(new PropertySource(name, getMap(source, includeOrigin), source));
 			}
 		}
@@ -83,33 +98,44 @@ public class PassthruEnvironmentRepository implements EnvironmentRepository {
 
 	@SuppressWarnings("unchecked")
 	private Map<?, ?> getMap(org.springframework.core.env.PropertySource<?> source, boolean includeOrigin) {
+		// 结果集合
 		Map<Object, Object> map = new LinkedHashMap<>();
 		Map<?, ?> input = (Map<?, ?>) source.getSource();
 		if (includeOrigin && source instanceof OriginLookup) {
+			// origin查询器
 			OriginLookup<String> originLookup = (OriginLookup<String>) source;
 			for (Object key : input.keySet()) {
+				// 通过origin查询器获取origin对象
 				Origin origin = originLookup.getOrigin(key.toString());
+				// origin对象为空
 				if (origin == null) {
+					// 向结果集合中加入数据
 					map.put(key, source.getProperty(key.toString()));
 					continue;
 				}
+				// 远端描述
 				String originDesc;
+				// origin类型是TextResourceOrigin
 				if (origin instanceof TextResourceOrigin) {
 					TextResourceOrigin tro = (TextResourceOrigin) origin;
+					// 将描述设置为location数据
 					originDesc = tro.getLocation().toString();
-				}
-				else {
+				} else {
+					// 将origin设置给描述
 					originDesc = origin.toString();
 				}
+				// 取值
 				Object value = source.getProperty(key.toString());
+				// 设置到结果集合中
 				map.put(key, new PropertyValueDescriptor(value, originDesc));
 			}
-		}
-		else {
+		} else {
+			// 处理属性源中的数据
 			for (Object key : input.keySet()) {
 				// Spring Boot wraps the property values in an "origin" detector, so we
 				// need
 				// to extract the string values
+				// 设置数据
 				map.put(key, source.getProperty(key.toString()));
 			}
 		}
