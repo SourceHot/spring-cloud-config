@@ -56,13 +56,18 @@ public class MultipleJGitEnvironmentRepositoryFactory
 	@Override
 	public MultipleJGitEnvironmentRepository build(MultipleJGitEnvironmentProperties environmentProperties)
 			throws Exception {
+		// 确认ConfigurableHttpConnectionFactory存在
 		if (this.connectionFactory.isPresent()) {
+			// 设置工厂
 			HttpTransport.setConnectionFactory(this.connectionFactory.get());
+			// 添加环境配置
 			this.connectionFactory.get().addConfiguration(environmentProperties);
 		}
 
+		// 创建git环境操作库
 		MultipleJGitEnvironmentRepository repository = new MultipleJGitEnvironmentRepository(this.environment,
-				environmentProperties);
+			environmentProperties);
+		// 设置回调
 		repository.setTransportConfigCallback(transportConfigCallbackFactory.build(environmentProperties));
 		if (this.server.getDefaultLabel() != null) {
 			repository.setDefaultLabel(this.server.getDefaultLabel());

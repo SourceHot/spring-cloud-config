@@ -214,20 +214,25 @@ public abstract class AbstractScmAccessor implements ResourceLoaderAware {
 	}
 
 	protected String[] getSearchLocations(File dir, String application, String profile, String label) {
+		// 设置搜索路径
 		String[] locations = this.searchPaths;
+		// 如果路径地址为空或者数量为0将路径地址设置为默认路径地址
 		if (locations == null || locations.length == 0) {
 			locations = AbstractScmAccessorProperties.DEFAULT_LOCATIONS;
 		}
+		// 如果路径地址和默认路径地址不相同会进行一次拆分操作得到完整的路径地址
 		else if (!Arrays.equals(locations, AbstractScmAccessorProperties.DEFAULT_LOCATIONS)) {
 			locations = StringUtils.concatenateStringArrays(AbstractScmAccessorProperties.DEFAULT_LOCATIONS, locations);
 		}
+		// 创建结果集
 		Collection<String> output = new LinkedHashSet<String>();
+		// 循环路径地址将最终的输出结果组装写入到结果集中
 		for (String location : locations) {
-			String[] profiles = new String[] { profile };
+			String[] profiles = new String[]{profile};
 			if (profile != null) {
 				profiles = StringUtils.commaDelimitedListToStringArray(profile);
 			}
-			String[] apps = new String[] { application };
+			String[] apps = new String[]{application};
 			if (application != null) {
 				apps = StringUtils.commaDelimitedListToStringArray(application);
 			}

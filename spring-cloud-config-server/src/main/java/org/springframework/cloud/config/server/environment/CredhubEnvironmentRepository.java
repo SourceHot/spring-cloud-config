@@ -48,6 +48,7 @@ public class CredhubEnvironmentRepository implements EnvironmentRepository {
 
 	@Override
 	public Environment findOne(String application, String profilesList, String label) {
+		// 确认profilesList和label数据
 		if (StringUtils.isEmpty(profilesList)) {
 			profilesList = DEFAULT_PROFILE;
 		}
@@ -55,22 +56,32 @@ public class CredhubEnvironmentRepository implements EnvironmentRepository {
 			label = DEFAULT_LABEL;
 		}
 
+		// 拆分profilesList数据
 		String[] profiles = StringUtils.commaDelimitedListToStringArray(profilesList);
 
+		// 创建环境对象
 		Environment environment = new Environment(application, profiles, label, null, null);
+		// 循环profiles数据
 		for (String profile : profiles) {
+			// 加入环境对象中
 			environment.add(new PropertySource("credhub-" + application + "-" + profile + "-" + label,
-					findProperties(application, profile, label)));
+				findProperties(application, profile, label)));
+			// 当前应用名称和默认应用名称不相同
 			if (!DEFAULT_APPLICATION.equals(application)) {
+				// 处理默认属性源数据
 				addDefaultPropertySource(environment, DEFAULT_APPLICATION, profile, label);
 			}
 		}
 
+		// 默认profile不在profiles集合中
 		if (!Arrays.asList(profiles).contains(DEFAULT_PROFILE)) {
+			// 处理默认属性源数据
 			addDefaultPropertySource(environment, application, DEFAULT_PROFILE, label);
 		}
 
+		// 默认profile不在profiles集合中并且当前应用名称和默认应用名称不相同
 		if (!Arrays.asList(profiles).contains(DEFAULT_PROFILE) && !DEFAULT_APPLICATION.equals(application)) {
+			// 处理默认属性源数据
 			addDefaultPropertySource(environment, DEFAULT_APPLICATION, DEFAULT_PROFILE, label);
 		}
 
@@ -78,17 +89,22 @@ public class CredhubEnvironmentRepository implements EnvironmentRepository {
 	}
 
 	private void addDefaultPropertySource(Environment environment, String application, String profile, String label) {
+		// 寻找属性
 		Map<Object, Object> properties = findProperties(application, profile, label);
 		if (!properties.isEmpty()) {
+			// 属性集合转换为属性源
 			PropertySource propertySource = new PropertySource("credhub-" + application + "-" + profile + "-" + label,
-					properties);
+				properties);
+			// 加入环境对象
 			environment.add(propertySource);
 		}
 	}
 
 	private Map<Object, Object> findProperties(String application, String profile, String label) {
+		// 创建路径地址
 		String path = "/" + application + "/" + profile + "/" + label;
 
+		// 通过CredHubOperations搜索属性
 		return this.credHubOperations.credentials().findByPath(path).stream()
 				.map(credentialSummary -> credentialSummary.getName().getName())
 				.map(name -> this.credHubOperations.credentials().getByName(new SimpleCredentialName(name),

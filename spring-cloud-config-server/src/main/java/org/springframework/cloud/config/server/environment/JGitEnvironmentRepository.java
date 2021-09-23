@@ -85,67 +85,93 @@ public class JGitEnvironmentRepository extends AbstractScmEnvironmentRepository
 
 	/**
 	 * Error message for URI for git repo.
+	 * git仓库地址错误消息
 	 */
 	public static final String MESSAGE = "You need to configure a uri for the git repository.";
 
+	/**
+	 * 文件路由前缀
+	 */
 	private static final String FILE_URI_PREFIX = "file:";
 
+	/**
+	 * 本地分支引用前缀
+	 */
 	private static final String LOCAL_BRANCH_REF_PREFIX = "refs/remotes/origin/";
 
 	/**
 	 * Timeout (in seconds) for obtaining HTTP or SSH connection (if applicable). Default
 	 * 5 seconds.
+	 * 超时时间,默认5秒
 	 */
 	private int timeout;
 
 	/**
 	 * Time (in seconds) between refresh of the git repository.
+	 * 刷新间隔时间
 	 */
 	private int refreshRate = 0;
 
 	/**
 	 * Time of the last refresh of the git repository.
+	 * 最后刷新时间
 	 */
 	private long lastRefresh;
 
 	/**
 	 * Flag to indicate that the repository should be cloned on startup (not on demand).
 	 * Generally leads to slower startup but faster first query.
+	 * 是否在启动阶段进行克隆操作
 	 */
 	private boolean cloneOnStart;
 
+	/**
+	 * git工厂
+	 */
 	private JGitEnvironmentRepository.JGitFactory gitFactory;
 
+	/**
+	 * 默认分支
+	 */
 	private String defaultLabel;
 
 	/**
 	 * Factory used to create the credentials provider to use to connect to the Git
 	 * repository.
+	 * git凭证工厂
 	 */
 	private GitCredentialsProviderFactory gitCredentialsProviderFactory = new GitCredentialsProviderFactory();
 
 	/**
 	 * Transport configuration callback for JGit commands.
+	 * git命令回调
 	 */
 	private TransportConfigCallback transportConfigCallback;
 
 	/**
 	 * Flag to indicate that the repository should force pull. If true discard any local
 	 * changes and take from remote repository.
+	 * 是否强制拉取
 	 */
 	private boolean forcePull;
 
+	/**
+	 * 是否初始化
+	 */
 	private boolean initialized;
 
 	/**
 	 * Flag to indicate that the branch should be deleted locally if it's origin tracked
 	 * branch was removed.
+	 * 如果分支的原始跟踪分支被删除，则表明该分支应在本地删除的标志
 	 */
 	private boolean deleteUntrackedBranches;
 
 	/**
 	 * Flag to indicate that SSL certificate validation should be bypassed when
 	 * communicating with a repository served over an HTTPS connection.
+	 *
+	 * 与git仓库建立https连接后是否跳过ssl验证
 	 */
 	private boolean skipSslValidation;
 
@@ -239,18 +265,24 @@ public class JGitEnvironmentRepository extends AbstractScmEnvironmentRepository
 
 	@Override
 	public synchronized Locations getLocations(String application, String profile, String label) {
+		// 参数标签是否为空，如果为空则将其设置为默认标签
 		if (label == null) {
 			label = this.defaultLabel;
 		}
+		// 刷新标签,实际操作是git相关的拉取
 		String version = refresh(label);
+		// 创建地址对象返回
 		return new Locations(application, profile, label, version,
-				getSearchLocations(getWorkingDirectory(), application, profile, label));
+			getSearchLocations(getWorkingDirectory(), application, profile, label));
 	}
 
 	@Override
 	public synchronized void afterPropertiesSet() throws Exception {
+		// 确认uri是否正常,不正常抛出异常
 		Assert.state(getUri() != null, MESSAGE);
+		// 实例化
 		initialize();
+		// 确认是否需要在初始化阶段进行克隆,如果需要则进行克隆
 		if (this.cloneOnStart) {
 			initClonedRepository();
 		}
@@ -271,6 +303,7 @@ public class JGitEnvironmentRepository extends AbstractScmEnvironmentRepository
 				// 拉取数据
 				FetchResult fetchStatus = fetch(git, label);
 				if (this.deleteUntrackedBranches && fetchStatus != null) {
+					// 删除未跟踪的本地分支
 					deleteUntrackedLocalBranches(fetchStatus.getTrackingRefUpdates(), git);
 				}
 			}
@@ -301,6 +334,7 @@ public class JGitEnvironmentRepository extends AbstractScmEnvironmentRepository
 		finally {
 			try {
 				if (git != null) {
+					// 关闭git操作库
 					git.close();
 				}
 			}
@@ -330,8 +364,9 @@ public class JGitEnvironmentRepository extends AbstractScmEnvironmentRepository
 	/**
 	 * Clones the remote repository and then opens a connection to it. Checks out to the
 	 * defaultLabel if specified.
+	 *
 	 * @throws GitAPIException when cloning fails
-	 * @throws IOException when repo opening fails
+	 * @throws IOException     when repo opening fails
 	 */
 	private void initClonedRepository() throws GitAPIException, IOException {
 		if (!getUri().startsWith(FILE_URI_PREFIX)) {
@@ -352,7 +387,7 @@ public class JGitEnvironmentRepository extends AbstractScmEnvironmentRepository
 				// If default branch is not empty and NOT equal to defaultLabel, then
 				// checkout the branch/tag/commit-id.
 				if (!StringUtils.isEmpty(defaultBranchInGit)
-						&& !getDefaultLabel().equalsIgnoreCase(defaultBranchInGit)) {
+					&& !getDefaultLabel().equalsIgnoreCase(defaultBranchInGit)) {
 					checkout(git, getDefaultLabel());
 				}
 			}

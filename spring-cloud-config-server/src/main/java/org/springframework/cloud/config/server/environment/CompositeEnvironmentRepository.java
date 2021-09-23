@@ -59,24 +59,24 @@ public class CompositeEnvironmentRepository implements EnvironmentRepository {
 
 	@Override
 	public Environment findOne(String application, String profile, String label, boolean includeOrigin) {
-		Environment env = new Environment(application, new String[] { profile }, label, null, null);
+		// 创建环境对象
+		Environment env = new Environment(application, new String[]{profile}, label, null, null);
+		// 如果成员变量environmentRepositories数据为1直接获取单个元素进行搜索
 		if (this.environmentRepositories.size() == 1) {
 			Environment envRepo = this.environmentRepositories.get(0).findOne(application, profile, label,
-					includeOrigin);
+				includeOrigin);
 			env.addAll(envRepo.getPropertySources());
 			env.setVersion(envRepo.getVersion());
 			env.setState(envRepo.getState());
-		}
-		else {
+		} else {
+			// 循环搜索，将单个搜索结果放入到环境对象中
 			for (EnvironmentRepository repo : environmentRepositories) {
 				try {
 					env.addAll(repo.findOne(application, profile, label, includeOrigin).getPropertySources());
-				}
-				catch (Exception e) {
+				} catch (Exception e) {
 					if (failOnError) {
 						throw e;
-					}
-					else {
+					} else {
 						log.info("Error adding environment for " + repo);
 					}
 				}

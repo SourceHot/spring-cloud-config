@@ -54,15 +54,25 @@ import org.springframework.util.StringUtils;
 public class JdbcEnvironmentRepository implements EnvironmentRepository, Ordered {
 
 	private static final Log logger = LogFactory.getLog(JdbcEnvironmentRepository.class);
-
+	/**
+	 * jdbc操作类
+	 */
 	private final JdbcTemplate jdbc;
-
+	/**
+	 * 属性值提取器
+	 */
 	private final PropertiesResultSetExtractor extractor = new PropertiesResultSetExtractor();
-
+	/**
+	 * 序号
+	 */
 	private int order;
-
+	/**
+	 *sql
+	 */
 	private String sql;
-
+	/**
+	 * 异常处理是否抛出
+	 */
 	private boolean failOnError;
 
 	public JdbcEnvironmentRepository(JdbcTemplate jdbc, JdbcEnvironmentProperties properties) {
@@ -82,6 +92,7 @@ public class JdbcEnvironmentRepository implements EnvironmentRepository, Ordered
 
 	@Override
 	public Environment findOne(String application, String profile, String label) {
+		// 确认config、label、profile数据信息
 		String config = application;
 		if (StringUtils.isEmpty(label)) {
 			label = "master";
@@ -93,15 +104,19 @@ public class JdbcEnvironmentRepository implements EnvironmentRepository, Ordered
 			profile = "default," + profile;
 		}
 		String[] profiles = StringUtils.commaDelimitedListToStringArray(profile);
+		// 创建环境对象
 		Environment environment = new Environment(application, profiles, label, null, null);
 		if (!config.startsWith("application")) {
 			config = "application," + config;
 		}
+		// 拆分应用名称
 		List<String> applications = new ArrayList<>(
-				new LinkedHashSet<>(Arrays.asList(StringUtils.commaDelimitedListToStringArray(config))));
+			new LinkedHashSet<>(Arrays.asList(StringUtils.commaDelimitedListToStringArray(config))));
+		// 拆分profiles数据
 		List<String> envs = new ArrayList<>(new LinkedHashSet<>(Arrays.asList(profiles)));
 		Collections.reverse(applications);
 		Collections.reverse(envs);
+		// 循环应用名称集合将其中的数据和profiles数据进行整合，通过jdbc查询，将查询结果放入到环境对象中
 		for (String app : applications) {
 			for (String env : envs) {
 				try {
@@ -109,14 +124,12 @@ public class JdbcEnvironmentRepository implements EnvironmentRepository, Ordered
 					if (next != null && !next.isEmpty()) {
 						environment.add(new PropertySource(app + "-" + env, next));
 					}
-				}
-				catch (DataAccessException e) {
+				} catch (DataAccessException e) {
 					if (!failOnError) {
 						if (logger.isDebugEnabled()) {
 							logger.debug("Failed to retrieve configuration from JDBC Repository", e);
 						}
-					}
-					else {
+					} else {
 						throw e;
 					}
 				}
