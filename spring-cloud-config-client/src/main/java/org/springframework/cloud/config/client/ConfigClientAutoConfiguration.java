@@ -49,10 +49,14 @@ public class ConfigClientAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ConfigClientProperties configClientProperties(Environment environment, ApplicationContext context) {
+		// 当前上下文存在父上下文
+		// ConfigClientProperties数据信息在父上下文中实例数量超过0
 		if (context.getParent() != null && BeanFactoryUtils.beanNamesForTypeIncludingAncestors(context.getParent(),
-				ConfigClientProperties.class).length > 0) {
+			ConfigClientProperties.class).length > 0) {
+			// 通过父上下文搜索ConfigClientProperties数据将其返回
 			return BeanFactoryUtils.beanOfTypeIncludingAncestors(context.getParent(), ConfigClientProperties.class);
 		}
+		// 创建 Spring Cloud Config 客户端配置
 		ConfigClientProperties client = new ConfigClientProperties(environment);
 		return client;
 	}
@@ -94,6 +98,7 @@ public class ConfigClientAutoConfiguration {
 		@Override
 		public void onApplicationEvent(ApplicationStartedEvent event) {
 			try {
+				// 尝试获取ConfigClientFailFastException类
 				ConfigClientFailFastException exception = event.getApplicationContext()
 						.getBean(ConfigClientFailFastException.class);
 				throw exception;

@@ -35,15 +35,19 @@ public class ConfigClientRetryBootstrapper implements BootstrapRegistryInitializ
 
 	@Override
 	public void initialize(BootstrapRegistry registry) {
+		// 不存在Retryable类结束处理
 		if (!RETRY_IS_PRESENT) {
 			return;
 		}
 
+		// 通过引导注册器注册LoaderInterceptor类
 		registry.registerIfAbsent(LoaderInterceptor.class, context -> loadContext -> {
 			ConfigServerConfigDataResource resource = loadContext.getResource();
 			if (resource.getProperties().isFailFast()) {
 				RetryProperties properties = resource.getRetryProperties();
+				// 创建重试模板对象
 				RetryTemplate retryTemplate = RetryTemplateFactory.create(properties, resource.getLog());
+				// 发送
 				return retryTemplate.execute(
 						retryContext -> loadContext.getInvocation().apply(loadContext.getLoaderContext(), resource));
 			}

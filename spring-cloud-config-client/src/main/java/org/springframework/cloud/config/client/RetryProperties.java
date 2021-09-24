@@ -19,6 +19,7 @@ package org.springframework.cloud.config.client;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * 重试配置
  * @author Dave Syer
  *
  */

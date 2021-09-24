@@ -28,6 +28,7 @@ import org.springframework.retry.annotation.Retryable;
 /**
  * Fetches config server instances.
  *
+ * Spring Cloud Config 服务实例提供器
  * @author Nastya Smirnova
  */
 public class ConfigServerInstanceProvider {

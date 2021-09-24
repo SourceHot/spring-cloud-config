@@ -42,6 +42,9 @@ import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 @EnableConfigurationProperties
 public class ConfigServiceBootstrapConfiguration {
 
+	/**
+	 * 环境对象
+	 */
 	@Autowired
 	private ConfigurableEnvironment environment;
 
@@ -67,6 +70,9 @@ public class ConfigServiceBootstrapConfiguration {
 	@EnableConfigurationProperties(RetryProperties.class)
 	protected static class RetryConfiguration {
 
+		/**
+		 * 重试操作拦截器
+		 */
 		@Bean
 		@ConditionalOnMissingBean(name = "configServerRetryInterceptor")
 		public RetryOperationsInterceptor configServerRetryInterceptor(RetryProperties properties) {

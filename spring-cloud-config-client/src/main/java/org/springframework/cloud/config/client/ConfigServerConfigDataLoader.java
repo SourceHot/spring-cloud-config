@@ -79,57 +79,77 @@ public class ConfigServerConfigDataLoader implements ConfigDataLoader<ConfigServ
 
 	@Override
 	public ConfigData load(ConfigDataLoaderContext context, ConfigServerConfigDataResource resource) {
+		// 在引导上下文中是否存在ConfigServerInstanceMonitor类型的bean实例，如果存在则获取一次
 		if (context.getBootstrapContext().isRegistered(ConfigServerInstanceMonitor.class)) {
 			// force initialization if needed
 			context.getBootstrapContext().get(ConfigServerInstanceMonitor.class);
 		}
+		// 在引导上下文中是否存在LoaderInterceptor类型的bean实例
 		if (context.getBootstrapContext().isRegistered(LoaderInterceptor.class)) {
+			// 从引导上下文中获取LoaderInterceptor实例
 			LoaderInterceptor interceptor = context.getBootstrapContext().get(LoaderInterceptor.class);
 			if (interceptor != null) {
+				// 获取binder对象
 				Binder binder = context.getBootstrapContext().get(Binder.class);
 				try {
+					// 通过LoaderInterceptor接口获取配置数据对象，关于数据的获取需要依赖doLoad方法
 					return interceptor.apply(new LoadContext(context, resource, binder, this::doLoad));
-				}
-				catch (ConfigClientFailFastException e) {
+				} catch (ConfigClientFailFastException e) {
+					// 出现异常返回空配置数据对象
 					context.getBootstrapContext()
-							.addCloseListener(event -> event.getApplicationContext().getBeanFactory()
-									.registerSingleton(ConfigClientFailFastException.class.getSimpleName(), e));
+						.addCloseListener(event -> event.getApplicationContext().getBeanFactory()
+							.registerSingleton(ConfigClientFailFastException.class.getSimpleName(), e));
 					return new ConfigData(Collections.emptyList());
 				}
 			}
 		}
+		// 实行加载操作
 		return doLoad(context, resource);
 	}
 
 	public ConfigData doLoad(ConfigDataLoaderContext context, ConfigServerConfigDataResource resource) {
+		// 获取SpringCloudConfig客户端配置对象
 		ConfigClientProperties properties = resource.getProperties();
+		// 属性源集合
 		List<PropertySource<?>> propertySources = new ArrayList<>();
+		// 异常对象
 		Exception error = null;
+		// 异常文本
 		String errorBody = null;
 		try {
-			String[] labels = new String[] { "" };
+			// 创建标签集合
+			String[] labels = new String[]{""};
+			// 对标签数据进行拆分
 			if (StringUtils.hasText(properties.getLabel())) {
 				labels = StringUtils.commaDelimitedListToStringArray(properties.getLabel());
 			}
+			// 获取状态信息
 			String state = ConfigClientStateHolder.getState();
 			// Try all the labels until one works
+			// 循环标签集合
 			for (String label : labels) {
+				// 获取远端的环境对象
 				Environment result = getRemoteEnvironment(context, resource, label.trim(), state);
+				// 环境对象不为空的情况下处理
 				if (result != null) {
+					// 日志处理
 					log(result);
 
 					// result.getPropertySources() can be null if using xml
+					// 环境对象中的属性源不为空
 					if (result.getPropertySources() != null) {
+						// 循环环境对象中的属性源将数据放入到属性源集合中
 						for (org.springframework.cloud.config.environment.PropertySource source : result
-								.getPropertySources()) {
+							.getPropertySources()) {
 							@SuppressWarnings("unchecked")
 							Map<String, Object> map = translateOrigins(source.getName(),
-									(Map<String, Object>) source.getSource());
+								(Map<String, Object>) source.getSource());
 							propertySources.add(0,
-									new OriginTrackedMapPropertySource("configserver:" + source.getName(), map));
+								new OriginTrackedMapPropertySource("configserver:" + source.getName(), map));
 						}
 					}
 
+					// 创建map集合用于设置state和version数据
 					HashMap<String, Object> map = new HashMap<>();
 					if (StringUtils.hasText(result.getState())) {
 						putValue(map, "config.client.state", result.getState());
@@ -139,16 +159,15 @@ public class ConfigServerConfigDataLoader implements ConfigDataLoader<ConfigServ
 					}
 					// the existence of this property source confirms a successful
 					// response from config server
+					// 将存储了state和version数据的内容放入到属性源集合中
 					propertySources.add(0, new MapPropertySource(CONFIG_CLIENT_PROPERTYSOURCE_NAME, map));
 					if (ALL_OPTIONS.size() == 1) {
 						// boot 2.4.2 and prior
 						return new ConfigData(propertySources);
-					}
-					else if (ALL_OPTIONS.size() == 2) {
+					} else if (ALL_OPTIONS.size() == 2) {
 						// boot 2.4.3 and 2.4.4
 						return new ConfigData(propertySources, Option.IGNORE_IMPORTS, Option.IGNORE_PROFILES);
-					}
-					else if (ALL_OPTIONS.size() > 2) {
+					} else if (ALL_OPTIONS.size() > 2) {
 						// boot 2.4.5+
 						return new ConfigData(propertySources, propertySource -> {
 							String propertySourceName = propertySource.getName();
@@ -172,29 +191,26 @@ public class ConfigServerConfigDataLoader implements ConfigDataLoader<ConfigServ
 				}
 			}
 			errorBody = String.format("None of labels %s found", Arrays.toString(labels));
-		}
-		catch (HttpServerErrorException e) {
+		} catch (HttpServerErrorException e) {
 			error = e;
 			if (MediaType.APPLICATION_JSON.includes(e.getResponseHeaders().getContentType())) {
 				errorBody = e.getResponseBodyAsString();
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			error = e;
 		}
 		if (properties.isFailFast() || !resource.isOptional()) {
 			String reason;
 			if (properties.isFailFast()) {
 				reason = "the fail fast property is set";
-			}
-			else {
+			} else {
 				reason = "the resource is not optional";
 			}
 			throw new ConfigClientFailFastException("Could not locate PropertySource and " + reason + ", failing"
-					+ (errorBody == null ? "" : ": " + errorBody), error);
+				+ (errorBody == null ? "" : ": " + errorBody), error);
 		}
 		logger.warn("Could not locate PropertySource (" + resource + "): "
-				+ (error != null ? error.getMessage() : errorBody));
+			+ (error != null ? error.getMessage() : errorBody));
 		return null;
 	}
 
@@ -250,10 +266,13 @@ public class ConfigServerConfigDataLoader implements ConfigDataLoader<ConfigServ
 	}
 
 	protected Environment getRemoteEnvironment(ConfigDataLoaderContext context, ConfigServerConfigDataResource resource,
-			String label, String state) {
+											   String label, String state) {
+		// 获取SpringCloudConfig客户端属性对象
 		ConfigClientProperties properties = resource.getProperties();
+		// 获取RestTemplate对象
 		RestTemplate restTemplate = context.getBootstrapContext().get(RestTemplate.class);
 
+		// 提取数据
 		String path = "/{name}/{profile}";
 		String name = properties.getName();
 		String profile = resource.getProfiles();
@@ -263,20 +282,22 @@ public class ConfigServerConfigDataLoader implements ConfigDataLoader<ConfigServ
 			logger.info("Multiple Config Server Urls found listed.");
 		}
 
-		Object[] args = new String[] { name, profile };
+		// 构造请求参数
+		Object[] args = new String[]{name, profile};
 		if (StringUtils.hasText(label)) {
 			// workaround for Spring MVC matching / in paths
 			label = Environment.denormalize(label);
-			args = new String[] { name, profile, label };
+			args = new String[]{name, profile, label};
 			path = path + "/{label}";
 		}
 		ResponseEntity<Environment> response = null;
 		List<MediaType> acceptHeader = Collections.singletonList(MediaType.parseMediaType(properties.getMediaType()));
 
 		ConfigClientRequestTemplateFactory requestTemplateFactory = context.getBootstrapContext()
-				.get(ConfigClientRequestTemplateFactory.class);
+			.get(ConfigClientRequestTemplateFactory.class);
 
 		for (int i = 0; i < noOfUrls; i++) {
+			// 获取账号密码配置对象
 			ConfigClientProperties.Credentials credentials = properties.getCredentials(i);
 			String uri = credentials.getUri();
 			String username = credentials.getUsername();
@@ -285,6 +306,7 @@ public class ConfigServerConfigDataLoader implements ConfigDataLoader<ConfigServ
 			logger.info("Fetching config from server at : " + uri);
 
 			try {
+				// 组装请求头
 				HttpHeaders headers = new HttpHeaders();
 				headers.setAccept(acceptHeader);
 				requestTemplateFactory.addAuthorizationToken(headers, username, password);
@@ -296,19 +318,17 @@ public class ConfigServerConfigDataLoader implements ConfigDataLoader<ConfigServ
 				}
 
 				final HttpEntity<Void> entity = new HttpEntity<>((Void) null, headers);
+				// 发送请求
 				response = restTemplate.exchange(uri + path, HttpMethod.GET, entity, Environment.class, args);
-			}
-			catch (HttpClientErrorException e) {
+			} catch (HttpClientErrorException e) {
 				if (e.getStatusCode() != HttpStatus.NOT_FOUND) {
 					throw e;
 				}
-			}
-			catch (ResourceAccessException e) {
+			} catch (ResourceAccessException e) {
 				logger.info("Connect Timeout Exception on Url - " + uri + ". Will be trying the next url if available");
 				if (i == noOfUrls - 1) {
 					throw e;
-				}
-				else {
+				} else {
 					continue;
 				}
 			}
@@ -318,6 +338,7 @@ public class ConfigServerConfigDataLoader implements ConfigDataLoader<ConfigServ
 			}
 
 			Environment result = response.getBody();
+			// 返回对象
 			return result;
 		}
 

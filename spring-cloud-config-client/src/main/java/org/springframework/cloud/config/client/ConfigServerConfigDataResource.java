@@ -26,14 +26,29 @@ import org.springframework.boot.context.config.Profiles;
 import org.springframework.core.style.ToStringCreator;
 import org.springframework.util.StringUtils;
 
+/**
+ * Spring Cloud Config 配置资源对象
+ */
 public class ConfigServerConfigDataResource extends ConfigDataResource {
 
+	/**
+	 * Spring Cloud Config 客户端配置
+	 */
 	private final ConfigClientProperties properties;
 
+	/**
+	 * 是否可选
+	 */
 	private final boolean optional;
 
+	/**
+	 * profiles
+	 */
 	private final Profiles profiles;
 
+	/**
+	 * 重试配置
+	 */
 	private RetryProperties retryProperties;
 
 	private Log log;

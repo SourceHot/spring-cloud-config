@@ -47,13 +47,16 @@ public class ConfigServerConfigDataMissingEnvironmentPostProcessor extends Confi
 	@Override
 	protected boolean shouldProcessEnvironment(Environment environment) {
 		// don't run if using bootstrap or legacy processing
+		// 是否启用引导程序,是否使用传统处理
 		if (bootstrapEnabled(environment) || useLegacyProcessing(environment)) {
 			return false;
 		}
+		// 获取spring.cloud.config.enabled数据
 		boolean configEnabled = environment.getProperty(ConfigClientProperties.PREFIX + ".enabled", Boolean.class,
-				true);
+			true);
+		// 获取spring.cloud.config.import-check.enabled数据
 		boolean importCheckEnabled = environment.getProperty(ConfigClientProperties.PREFIX + ".import-check.enabled",
-				Boolean.class, true);
+			Boolean.class, true);
 		if (!configEnabled || !importCheckEnabled) {
 			return false;
 		}

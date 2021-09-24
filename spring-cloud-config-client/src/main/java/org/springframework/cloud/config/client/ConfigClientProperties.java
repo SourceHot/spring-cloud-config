@@ -37,6 +37,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
+ * Spring Cloud Config 客户端配置
  * @author Dave Syer
  *
  */

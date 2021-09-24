@@ -29,6 +29,9 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.SmartApplicationListener;
 import org.springframework.util.Assert;
 
+/**
+ * Spring Cloud Config 服务实例监控器
+ */
 final class ConfigServerInstanceMonitor implements SmartApplicationListener {
 
 	private final Log log;
