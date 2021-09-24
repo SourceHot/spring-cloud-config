@@ -126,12 +126,17 @@ public class EnvironmentController {
 
 	public Environment getEnvironment(String name, String profiles, String label, boolean includeOrigin) {
 		try {
+			// 确认名称
 			name = normalize(name);
+			// 确认标签
 			label = normalize(label);
+			// 通过成员变量搜索环境对象
 			Environment environment = this.repository.findOne(name, profiles, label, includeOrigin);
+			// 搜索失败抛出异常
 			if (!this.acceptEmpty && (environment == null || environment.getPropertySources().isEmpty())) {
 				throw new EnvironmentNotFoundException("Profile Not found");
 			}
+			// 返回环境对象
 			return environment;
 		}
 		catch (Exception e) {
@@ -170,21 +175,29 @@ public class EnvironmentController {
 
 	@RequestMapping("{name}-{profiles}.json")
 	public ResponseEntity<String> jsonProperties(@PathVariable String name, @PathVariable String profiles,
-			@RequestParam(defaultValue = "true") boolean resolvePlaceholders) throws Exception {
+												 @RequestParam(defaultValue = "true") boolean resolvePlaceholders) throws Exception {
+		// 转换
 		return labelledJsonProperties(name, profiles, null, resolvePlaceholders);
 	}
 
 	@RequestMapping("/{label}/{name}-{profiles}.json")
 	public ResponseEntity<String> labelledJsonProperties(@PathVariable String name, @PathVariable String profiles,
-			@PathVariable String label, @RequestParam(defaultValue = "true") boolean resolvePlaceholders)
-			throws Exception {
+														 @PathVariable String label, @RequestParam(defaultValue = "true") boolean resolvePlaceholders)
+		throws Exception {
+		// 验证profiles数据
 		validateProfiles(profiles);
+		// 获取环境对象
 		Environment environment = labelled(name, profiles, label);
+		// 将环境对象转换为map对象
 		Map<String, Object> properties = convertToMap(environment);
+		// 将map对象转换成json对象
 		String json = this.objectMapper.writeValueAsString(properties);
+		// 是否需要解析占位符
 		if (resolvePlaceholders) {
+			// 解析占位符
 			json = resolvePlaceholders(prepareEnvironment(environment), json);
 		}
+		// 返回对象
 		return getSuccess(json, MediaType.APPLICATION_JSON);
 	}
 
