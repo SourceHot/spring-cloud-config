@@ -100,8 +100,9 @@ public class ResourceController {
 
 	@RequestMapping("/{name}/{profile}/{label}/**")
 	public String retrieve(@PathVariable String name, @PathVariable String profile, @PathVariable String label,
-			ServletWebRequest request, @RequestParam(defaultValue = "true") boolean resolvePlaceholders)
-			throws IOException {
+						   ServletWebRequest request, @RequestParam(defaultValue = "true") boolean resolvePlaceholders)
+		throws IOException {
+		// 获取路径地址
 		String path = getFilePath(request, name, profile, label);
 		return retrieve(request, name, profile, label, path, resolvePlaceholders);
 	}
@@ -127,9 +128,12 @@ public class ResourceController {
 	}
 
 	synchronized String retrieve(ServletWebRequest request, String name, String profile, String label, String path,
-			boolean resolvePlaceholders) throws IOException {
+								 boolean resolvePlaceholders) throws IOException {
+		// 确认name
 		name = Environment.normalize(name);
+		// 确认label
 		label = Environment.normalize(label);
+		// 寻找资源
 		Resource resource = this.resourceRepository.findOne(name, profile, label, path);
 		if (checkNotModified(request, resource)) {
 			// Content was not modified. Just return.
@@ -150,8 +154,7 @@ public class ResourceController {
 				ResourceEncryptor re = this.resourceEncryptorMap.get(ext);
 				if (re == null) {
 					logger.warn("Cannot decrypt for extension " + ext);
-				}
-				else {
+				} else {
 					text = re.decrypt(text, environment);
 				}
 			}

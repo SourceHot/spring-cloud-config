@@ -222,9 +222,14 @@ public class EnvironmentController {
 	public ResponseEntity<String> labelledYaml(@PathVariable String name, @PathVariable String profiles,
 			@PathVariable String label, @RequestParam(defaultValue = "true") boolean resolvePlaceholders)
 			throws Exception {
+		// 验证profiles数据
 		validateProfiles(profiles);
+		// 获取环境对象
 		Environment environment = labelled(name, profiles, label);
+		// 将环境对象转换为map对象
 		Map<String, Object> result = convertToMap(environment);
+
+		// 为document进行数据解析
 		if (this.stripDocument && result.size() == 1 && result.keySet().iterator().next().equals("document")) {
 			Object value = result.get("document");
 			if (value instanceof Collection) {
@@ -234,12 +239,16 @@ public class EnvironmentController {
 				return getSuccess(new Yaml().dumpAs(value, Tag.STR, FlowStyle.BLOCK));
 			}
 		}
+		// 将map转换为yaml字符串
 		String yaml = new Yaml().dumpAsMap(result);
 
+		// 确认是否需要进一步解析
 		if (resolvePlaceholders) {
+			// 解析占位符
 			yaml = resolvePlaceholders(prepareEnvironment(environment), yaml);
 		}
 
+		// 返回结果
 		return getSuccess(yaml);
 	}
 

@@ -101,12 +101,18 @@ public class EncryptionController {
 
 	@RequestMapping(value = "/encrypt/{name}/{profiles}", method = RequestMethod.POST)
 	public String encrypt(@PathVariable String name, @PathVariable String profiles, @RequestBody String data,
-			@RequestHeader("Content-Type") MediaType type) {
+						  @RequestHeader("Content-Type") MediaType type) {
+		// 获取加密器
 		TextEncryptor encryptor = getEncryptor(name, profiles, "");
+		// 验证加密器
 		validateEncryptionWeakness(encryptor);
+		// 提取字符串
 		String input = stripFormData(data, type, false);
+		// 查找加密内容
 		Map<String, String> keys = helper.getEncryptorKeys(name, profiles, input);
+		// 处理前缀
 		String textToEncrypt = helper.stripPrefix(input);
+		// 解密
 		String encrypted = helper.addPrefix(keys, encryptorLocator.locate(keys).encrypt(textToEncrypt));
 		logger.info("Encrypted data");
 		return encrypted;
@@ -119,18 +125,24 @@ public class EncryptionController {
 
 	@RequestMapping(value = "/decrypt/{name}/{profiles}", method = RequestMethod.POST)
 	public String decrypt(@PathVariable String name, @PathVariable String profiles, @RequestBody String data,
-			@RequestHeader("Content-Type") MediaType type) {
+						  @RequestHeader("Content-Type") MediaType type) {
+
+		// 获取解密器
 		TextEncryptor encryptor = getEncryptor(name, profiles, "");
+		// 检查是否可以解密
 		checkDecryptionPossible(encryptor);
+		// 验证解密器
 		validateEncryptionWeakness(encryptor);
 		try {
+			// 获取解密器
 			encryptor = getEncryptor(name, profiles, data);
+			// 提取待解密字符串
 			String input = stripFormData(helper.stripPrefix(data), type, true);
+			// 解密
 			String decrypted = encryptor.decrypt(input);
 			logger.info("Decrypted cipher data");
 			return decrypted;
-		}
-		catch (IllegalArgumentException | IllegalStateException e) {
+		} catch (IllegalArgumentException | IllegalStateException e) {
 			logger.error("Cannot decrypt key:" + name + ", value:" + data, e);
 			throw new InvalidCipherException();
 		}
