@@ -67,6 +67,9 @@ public class ConfigServicePropertySourceLocator implements PropertySourceLocator
 
 	private RestTemplate restTemplate;
 
+	/**
+	 * Spring Cloud Config 客户端配置
+	 */
 	private ConfigClientProperties defaultProperties;
 
 	public ConfigServicePropertySourceLocator(ConfigClientProperties defaultProperties) {
@@ -76,35 +79,48 @@ public class ConfigServicePropertySourceLocator implements PropertySourceLocator
 	@Override
 	@Retryable(interceptor = "configServerRetryInterceptor")
 	public org.springframework.core.env.PropertySource<?> locate(org.springframework.core.env.Environment environment) {
+		// 重载一次SpringCloudConfig客户端配置
 		ConfigClientProperties properties = this.defaultProperties.override(environment);
+		// 创建复合属性源
 		CompositePropertySource composite = new OriginTrackedCompositePropertySource("configService");
+		// 创建SpringCloudConfig客户端请求模板工程
 		ConfigClientRequestTemplateFactory requestTemplateFactory = new ConfigClientRequestTemplateFactory(logger,
-				properties);
+			properties);
 
+		// 异常对象
 		Exception error = null;
+		// 异常内容
 		String errorBody = null;
 		try {
-			String[] labels = new String[] { "" };
+			// 确认标签集合
+			String[] labels = new String[]{""};
 			if (StringUtils.hasText(properties.getLabel())) {
 				labels = StringUtils.commaDelimitedListToStringArray(properties.getLabel());
 			}
+			// 获取SpringCloudConfig客户端状态
 			String state = ConfigClientStateHolder.getState();
 			// Try all the labels until one works
+			// 循环标签集合
 			for (String label : labels) {
+				// 单个标签获取远端环境对象
 				Environment result = getRemoteEnvironment(requestTemplateFactory, label.trim(), state);
+				// 环境对象不为空
 				if (result != null) {
+					// 日志记录
 					log(result);
 
 					// result.getPropertySources() can be null if using xml
+					// 如果环境对象中的属性源存在会将器中的数据进行类型转换加入到复合属性源集合中
 					if (result.getPropertySources() != null) {
 						for (PropertySource source : result.getPropertySources()) {
 							@SuppressWarnings("unchecked")
 							Map<String, Object> map = translateOrigins(source.getName(),
-									(Map<String, Object>) source.getSource());
+								(Map<String, Object>) source.getSource());
 							composite.addPropertySource(new OriginTrackedMapPropertySource(source.getName(), map));
 						}
 					}
 
+					// 设置state和version数据
 					HashMap<String, Object> map = new HashMap<>();
 					if (StringUtils.hasText(result.getState())) {
 						putValue(map, "config.client.state", result.getState());
@@ -114,24 +130,24 @@ public class ConfigServicePropertySourceLocator implements PropertySourceLocator
 					}
 					// the existence of this property source confirms a successful
 					// response from config server
+					// 将state和version数据组装后加入到复合属性集合的第一个位置
 					composite.addFirstPropertySource(new MapPropertySource("configClient", map));
+					// 返回复合属性源
 					return composite;
 				}
 			}
 			errorBody = String.format("None of labels %s found", Arrays.toString(labels));
-		}
-		catch (HttpServerErrorException e) {
+		} catch (HttpServerErrorException e) {
 			error = e;
 			if (MediaType.APPLICATION_JSON.includes(e.getResponseHeaders().getContentType())) {
 				errorBody = e.getResponseBodyAsString();
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			error = e;
 		}
 		if (properties.isFailFast()) {
 			throw new IllegalStateException("Could not locate PropertySource and the fail fast property is set, failing"
-					+ (errorBody == null ? "" : ": " + errorBody), error);
+				+ (errorBody == null ? "" : ": " + errorBody), error);
 		}
 		logger.warn("Could not locate PropertySource: " + (error != null ? error.getMessage() : errorBody));
 		return null;
@@ -196,8 +212,11 @@ public class ConfigServicePropertySourceLocator implements PropertySourceLocator
 
 	private Environment getRemoteEnvironment(ConfigClientRequestTemplateFactory requestTemplateFactory, String label,
 			String state) {
+		// 创建rest模板对象
 		RestTemplate restTemplate = this.restTemplate == null ? requestTemplateFactory.create() : this.restTemplate;
+		// 获取SpringCloudConfig客户端属性
 		ConfigClientProperties properties = requestTemplateFactory.getProperties();
+		// 确认path、name、profile、token和参数对象
 		String path = "/{name}/{profile}";
 		String name = properties.getName();
 		String profile = properties.getProfile();
@@ -214,9 +233,11 @@ public class ConfigServicePropertySourceLocator implements PropertySourceLocator
 			args = new String[] { name, profile, label };
 			path = path + "/{label}";
 		}
+
 		ResponseEntity<Environment> response = null;
 		List<MediaType> acceptHeader = Collections.singletonList(MediaType.parseMediaType(properties.getMediaType()));
 
+		// 对url进行请求
 		for (int i = 0; i < noOfUrls; i++) {
 			Credentials credentials = properties.getCredentials(i);
 			String uri = credentials.getUri();
@@ -237,6 +258,7 @@ public class ConfigServicePropertySourceLocator implements PropertySourceLocator
 				}
 
 				final HttpEntity<Void> entity = new HttpEntity<>((Void) null, headers);
+				// 发送请求
 				response = restTemplate.exchange(uri + path, HttpMethod.GET, entity, Environment.class, args);
 			}
 			catch (HttpClientErrorException e) {
@@ -258,6 +280,7 @@ public class ConfigServicePropertySourceLocator implements PropertySourceLocator
 				return null;
 			}
 
+			// 获取相应返回
 			Environment result = response.getBody();
 			return result;
 		}

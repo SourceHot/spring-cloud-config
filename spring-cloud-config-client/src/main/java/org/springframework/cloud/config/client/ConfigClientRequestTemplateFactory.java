@@ -42,6 +42,9 @@ import org.springframework.web.client.RestTemplate;
 
 import static org.springframework.cloud.config.client.ConfigClientProperties.AUTHORIZATION;
 
+/**
+ * SpringCloudConfig客户端请求模板工程
+ */
 public class ConfigClientRequestTemplateFactory {
 
 	private final Log log;

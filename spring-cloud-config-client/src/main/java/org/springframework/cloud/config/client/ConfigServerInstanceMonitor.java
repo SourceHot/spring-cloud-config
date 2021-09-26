@@ -35,15 +35,22 @@ import org.springframework.util.Assert;
 final class ConfigServerInstanceMonitor implements SmartApplicationListener {
 
 	private final Log log;
-
+	/**
+	 * Spring Cloud Config客户端配置
+	 */
 	private final ConfigClientProperties config;
-
+	/**
+	 * Spring Cloud Config 服务实例提供器
+	 */
 	private final ConfigServerInstanceProvider instanceProvider;
-
+	/**
+	 * 心跳监控
+	 */
 	private final HeartbeatMonitor monitor = new HeartbeatMonitor();
 
 	/**
 	 * If bootstrap, this should be true, for config data false.
+	 * 是否需要在启动时刷新
 	 */
 	private boolean refreshOnStartup = true;
 
@@ -66,9 +73,10 @@ final class ConfigServerInstanceMonitor implements SmartApplicationListener {
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
 		if (event instanceof ContextRefreshedEvent) {
+			// startup方法调度
 			startup((ContextRefreshedEvent) event);
-		}
-		else if (event instanceof HeartbeatEvent) {
+		} else if (event instanceof HeartbeatEvent) {
+			// heartbeat方法调度
 			heartbeat((HeartbeatEvent) event);
 		}
 	}
@@ -87,16 +95,23 @@ final class ConfigServerInstanceMonitor implements SmartApplicationListener {
 
 	void refresh() {
 		try {
+			// 获取服务id
 			String serviceId = this.config.getDiscovery().getServiceId();
+			// 服务id不存在抛出异常
 			Assert.hasText(serviceId, () -> ConfigClientProperties.PREFIX + ".service-id may not be null or empty");
+			// 创建url集合
 			List<String> listOfUrls = new ArrayList<>();
+			// 根据服务id获取服务实例
 			List<ServiceInstance> serviceInstances = this.instanceProvider.getConfigServerInstances(serviceId);
 
 			for (int i = 0; i < serviceInstances.size(); i++) {
 
+				// 获取服务实例
 				ServiceInstance server = serviceInstances.get(i);
+				// 获取url地址
 				String url = getHomePage(server);
 
+				// 在元数据中存在密码的情况下为客户端配置设置用户名和密码数据
 				if (server.getMetadata().containsKey("password")) {
 					String user = server.getMetadata().get("user");
 					user = user == null ? "user" : user;
@@ -105,6 +120,7 @@ final class ConfigServerInstanceMonitor implements SmartApplicationListener {
 					this.config.setPassword(password);
 				}
 
+				// 在元数据中存在configPath数据的情况下修正url地址
 				if (server.getMetadata().containsKey("configPath")) {
 					String path = server.getMetadata().get("configPath");
 					if (url.endsWith("/") && path.startsWith("/")) {
@@ -113,6 +129,7 @@ final class ConfigServerInstanceMonitor implements SmartApplicationListener {
 					url = url + path;
 				}
 
+				// 向路由地址集合加入当前处理完成的路由
 				listOfUrls.add(url);
 			}
 
@@ -120,6 +137,7 @@ final class ConfigServerInstanceMonitor implements SmartApplicationListener {
 				log.debug("Updating config uris to " + listOfUrls);
 			}
 
+			// 转换为数组设置到客户端配置中
 			String[] uri = new String[listOfUrls.size()];
 			uri = listOfUrls.toArray(uri);
 			this.config.setUri(uri);
